@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
 
-const boardsSchema = mongoose.Schema({
+const { Schema } = mongoose;
+  const boardsSchema = new Schema({
     num:{
         type: Number,
         required: true,
@@ -16,7 +17,7 @@ const boardsSchema = mongoose.Schema({
         unique: true
     },
     password : {
-        type: Number,
+        type: String,
         required: true
     },
     content : {

@@ -29,7 +29,7 @@ router.post("/boards", async(req, res) => {
     const time = moment().add('9','h').format('YYYY-MM-DD HH:mm:ss')//표준시와의 시차적용한 시간
     const { num, userId, title, content, password,} = req.body;
 
-    const boards = await Boards.find({ num });
+    const boards = await Boards.find({ num: Number(num) });
     if (boards.length) {
       return res.status(400).json({ success: false, errorMessage: "이미 있는 게시글입니다."})
     }
@@ -46,7 +46,7 @@ router.put("/boards/:num", async (req, res) => {
 
     const existsboards = await Boards.find({ num: Number(num) }); 
     
-    if (!existsBoards){
+    if (!existsboards){
         return res.status(400).json({ success: false, errorMessage: "찾는 게시물 없음."});
     }
     if (Number(password) !== Number(existsLists.password)){
@@ -61,19 +61,22 @@ router.put("/boards/:num", async (req, res) => {
 router.delete("/boards/:num", async (req, res)=>{
 
     const { num } = req.params;
-    const {userId, title, content, password} = req.body;
+    const {password} = req.body;
 
     const existsboards = await Boards.find({ num: Number(num) }); 
 
-    if (existsBoards.length) {
-        if(Number(password)===Number(existsLists.password)){
+    if (existsboards.length) {
+        console.log(password, existsboards.password)
+
+        if(password===existsboards.password){
             await Boards.deleteOne({ num: Number(num)} ,{$set: {userId, content, title, time}});
         }
         else{
+            console.log(password)
             return res.status(400).json({ success: false, errorMessage: "비밀번호 틀렸음."});
+            
         }
     }
-
     res.json({ success: true});
 });
 

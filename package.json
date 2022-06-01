@@ -1,7 +1,6 @@
 {
   "name": "blog",
   "version": "1.0.0",
-  "description": "",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,7 +11,18 @@
   "dependencies": {
     "dayjs": "^1.11.2",
     "express": "^4.18.1",
+    "joi": "^17.6.0",
+    "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.3",
     "mongoose": "^6.3.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jyj9784/hanghae_thirdweek.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jyj9784/hanghae_thirdweek/issues"
+  },
+  "homepage": "https://github.com/jyj9784/hanghae_thirdweek#readme",
+  "description": ""
 }
