@@ -3,17 +3,15 @@ const Users = require("../schemas/users")
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middlewares/auth-middleware.js");
 const Joi = require("joi")
-
-
-const app = express();
 const router = express.Router();
+
 
 const postUsersSchema = Joi.object({
   username: Joi.string().alphanum().min(3).max(30).required(),
   password: Joi.string().min(4).required(),
   confirmPassword: Joi.string().required(),
 });
-//회원가입 API
+//회원가입
 router.post("/signup", async (req, res) => {
   try {
     const {
@@ -55,7 +53,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-//로그인 API 
+//로그인
 const postAuthSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
@@ -74,7 +72,8 @@ router.post("/login", async (req, res) => {
       return;
     }
 
-    const token = jwt.sign({ userId: Users.userId }, "my-secret-key");
+    const token = jwt.sign({ username }, "my-secret-key");
+    console.log(`${username}님이 로그인 하셨습니다.`)
     res.send({
       token,
     });
@@ -86,20 +85,17 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// app.use("/api", express.urlencoded({ extended: false }), router);
-// app.use(express.static("assets"));
-
-// app.listen(8080, () => {
-//   console.log("서버가 요청을 받을 준비가 됐어요");
-// });
-
-
-router.get('/users/me', authMiddleware, async (req, res, next) => {
-  const { user } = res.locals; // user변수에 locals에있는 객체안에있는 키가 구조분해할당이 되어 들어간다 
+router.get('/users/me', authMiddleware, async (req, res) => {
+  const user = res.locals.user; // user변수에 locals에있는 객체안에있는 키가 구조분해할당이 되어 들어간다 
   // 여기에 사용자 정보가 들어있다  인증용도
-  res.send({
-      user,
-  });
-})
+  if (user) {
+    res.status(400).send({
+      errorMessage: "이미 로그인 되어있습니다."
+    });
+    return;
+  }
+
+});
+
 
 module.exports = router;

@@ -2,7 +2,7 @@ const mongoose = require("mongoose")
 
 const { Schema } = mongoose;
   const boardsSchema = new Schema({
-    num:{
+    boardId: {
         type: Number,
         required: true,
         unique: true
@@ -11,14 +11,8 @@ const { Schema } = mongoose;
         type: String,
         required: true
     },
-    userId : {
-        type: String,
-        required: true,
-        unique: true
-    },
-    password : {
-        type: String,
-        required: true
+    username : {
+        type: String
     },
     content : {
         type: String,
@@ -29,5 +23,11 @@ const { Schema } = mongoose;
         required: true
     }
 });
+boardsSchema.virtual("userId").get(function () {
+    return this._id.toHexString();
+  });
+  boardsSchema.set("toJSON", {
+    virtuals: true,
+  });
 
 module.exports = mongoose.model("Boards", boardsSchema);

@@ -1,83 +1,82 @@
 const express = require("express");
 const Boards = require('../schemas/boards');
+const Comment = require('../schemas/comments');
+const authMiddleware = require("../middlewares/auth-middleware");
 const router = express.Router();
 const moment = require("moment");
 
-const boards = [];
 //전체 조회
-router.get("/boards", async(req, res) => {
+router.get('/boards', async (req, res) => {
     const boards = await Boards
-    .find({}, {num:1,title:1, time:1, name:1})
-    .sort({"time":-1});
-    res.json({ boards,});
+        .find({}, { boardId: 1, title: 1, time: 1, content: 1 })
+        .sort({ "time": -1 });
+    res.json({ boards, });
 });
-//게시물 조건 조회
-router.get('/boards',async (req,res)=>{
-    const { userId, title, time, content } = req.query 
-    const boards = await Boards
-    .find({userId, title, time, content}, {num:1,title:1,name:1,content:1,time:1, _id: 0} )
-    .sort({time:-1})
-    res.json({ boards,});
-});
-router.get('/boards/:num',async (req,res)=>{
-    const { num } = req.params;
-    const [detail] = await Boards.find({}, {num:1,title:1, time:1, userId:1, content:1})
-    res.json({ detail,}) 
-});
-//글 작성
-router.post("/boards", async(req, res) => {
-    const time = moment().add('9','h').format('YYYY-MM-DD HH:mm:ss')//표준시와의 시차적용한 시간
-    const { num, userId, title, content, password,} = req.body;
-
-    const boards = await Boards.find({ num: Number(num) });
-    if (boards.length) {
-      return res.status(400).json({ success: false, errorMessage: "이미 있는 게시글입니다."})
+//게시글 한개 조회
+router.get('/boards/:boardId', async (req, res) => {
+    const { boardId } = req.params;
+    const existsboards = await Boards
+        .find({ boardId }, { boardId: 1, title: 1, content: 1, username: 1, time: 1, _id: 0 });
+    if (!existsboards.length) {
+        return res.status(400).json({ success: false, errorMessage: "찾는 게시물 없음." });
     }
 
-    const createdBoards = await Boards.create({ num, userId, title, content, password, time });
+    const existcomments = await Comment
+        .find({ boardId },
+            { commentId: 1, title: 1, comment: 1, username: 1, time: 1, _id: 0 })
+        .sort({ time: -1 });
+    res.json({ existsboards, existcomments });
+});
 
-    res.json({ boards : createdBoards});
+//글 작성
+router.post("/boards", authMiddleware, async (req, res) => {
+    const { username } = res.locals.user;
+    const { boardId, title, content } = req.body;
+    const time = moment().add('9', 'h').format('YYYY-MM-DD HH:mm:ss')//표준시와의 시차적용한 시간
+
+    const boards = await Boards.find({ boardId });
+    if (boards.length) {
+        return res.status(400).json({ success: false, errorMessage: "이미 있는 게시글입니다." })
+    }
+
+    const createdBoards = await Boards.create({ boardId, username, title, content, time });
+    res.json({ boards: createdBoards });
 });
 
 //게시글 수정
-router.put("/boards/:num", async (req, res) => {
-    const { num } = req.params;
-    const {userId, title, content, password} = req.body;
+router.put("/boards/:boardId", authMiddleware, async (req, res) => {
 
-    const existsboards = await Boards.find({ num: Number(num) }); 
-    
-    if (!existsboards){
-        return res.status(400).json({ success: false, errorMessage: "찾는 게시물 없음."});
+    const { boardId } = req.params;
+    const { title, content } = req.body;
+
+    const existsboard = await Boards.find({ boardId });
+    if (!existsboard.length) {
+        return res.status(400).json({ success: false, errorMessage: "찾는 게시물 없음." });
     }
-    if (Number(password) !== Number(existsLists.password)){
-        return res.status(400).json({ success: false, errorMessage: "비밀번호 틀렸음."});
+    else {
+        await Boards.updateOne({ boardId }, { $set: { content, title } });
+        return res.json({ success: true });
     }
-    await Boards.uptimeOne({num: Number(num)}, {$set: {userId, content, title, time}});
-    
-    res.json({ success: true});
+});
+//글 삭제 , 댓글까지 같이 삭제
+router.delete('/boards/:boardId', authMiddleware, async (req, res) => {
+    const { boardId } = req.params;
+    const user = res.locals.user;
+    const [existBoard] = await Boards.find({ boardId: Number(boardId) });
+    if (!existBoard) {
+        return res.status(400).json({ success: false, errorMessage: '삭제할 데이터가 없습니다.' });
+    };
+
+    if (user.username !== existBoard.username) {
+        return res.status(400).json({ success: false, errorMessage: '본인의 게시글만 삭제할 수 있습니다.' });
+    };
+    if (user.username === existBoard.username) {
+        await Boards.deleteOne({ boardId: Number(boardId) });
+        await Comment.deleteMany({ boardId: Number(boardId) });
+        res.json({ successMessage: "성공적으로 삭제하였습니다." });
+        return;
+    }
 });
 
-//게시글 제거 , 입력된 비밀번호를 비교하여 동일할 때만 글이 삭제되게 하기
-router.delete("/boards/:num", async (req, res)=>{
-
-    const { num } = req.params;
-    const {password} = req.body;
-
-    const existsboards = await Boards.find({ num: Number(num) }); 
-
-    if (existsboards.length) {
-        console.log(password, existsboards.password)
-
-        if(password===existsboards.password){
-            await Boards.deleteOne({ num: Number(num)} ,{$set: {userId, content, title, time}});
-        }
-        else{
-            console.log(password)
-            return res.status(400).json({ success: false, errorMessage: "비밀번호 틀렸음."});
-            
-        }
-    }
-    res.json({ success: true});
-});
 
 module.exports = router;
